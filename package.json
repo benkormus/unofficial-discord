@@ -1,0 +1,26 @@
+{
+  "name": "discord-chat-app",
+  "version": "1.0.0",
+  "description": "Inoffizieller Discord Desktop-Client",
+  "author": "Discord Chat App",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "set CSC_IDENTITY_AUTO_DISCOVERY=false&& electron-builder --win"
+  },
+  "build": {
+    "appId": "com.discordchatapp.desktop",
+    "productName": "Discord Chat App",
+    "icon": "logo.png",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": ["portable"]
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}

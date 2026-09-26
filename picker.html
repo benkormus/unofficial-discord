@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Bildschirm freigeben</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #1e1f22;
+      color: #f2f3f5;
+      font-family: "gg sans", "Helvetica Neue", Arial, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-radius: 8px;
+      border: 1px solid #2b2d31;
+    }
+
+    header {
+      padding: 16px 20px 8px;
+      -webkit-app-region: drag;
+      position: relative;
+    }
+
+    header h1 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    header p {
+      font-size: 13px;
+      color: #949ba4;
+      margin-top: 4px;
+    }
+
+    .close-btn {
+      -webkit-app-region: no-drag;
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      background: transparent;
+      border: none;
+      color: #949ba4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .close-btn:hover {
+      background: #da373c;
+      color: #ffffff;
+    }
+
+    .close-btn svg {
+      width: 10px;
+      height: 10px;
+      fill: currentColor;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      padding: 0 20px;
+      border-bottom: 1px solid #2b2d31;
+    }
+
+    .tab-btn {
+      background: transparent;
+      color: #949ba4;
+      border: none;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+
+    .tab-btn:hover {
+      color: #f2f3f5;
+    }
+
+    .tab-btn.active {
+      color: #f2f3f5;
+      border-bottom-color: #5865f2;
+    }
+
+    .empty-hint {
+      grid-column: 1 / -1;
+      color: #949ba4;
+      font-size: 13px;
+      text-align: center;
+      padding: 24px 0;
+    }
+
+    .grid {
+      flex: 1;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding: 16px 20px;
+    }
+
+    .source {
+      background: #2b2d31;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+
+    .source:hover {
+      border-color: #5865f2;
+    }
+
+    .source.selected {
+      border-color: #5865f2;
+      background: #35374a;
+    }
+
+    .source img {
+      width: 100%;
+      height: 100px;
+      object-fit: cover;
+      background: #111214;
+      display: block;
+    }
+
+    .source-name {
+      padding: 8px;
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 12px 20px;
+      border-top: 1px solid #2b2d31;
+    }
+
+    button {
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 16px;
+      cursor: pointer;
+    }
+
+    #cancel-btn {
+      background: transparent;
+      color: #f2f3f5;
+    }
+
+    #cancel-btn:hover {
+      text-decoration: underline;
+    }
+
+    #share-btn {
+      background: #5865f2;
+      color: #ffffff;
+    }
+
+    #share-btn:disabled {
+      background: #3b3d59;
+      color: #949ba4;
+      cursor: not-allowed;
+    }
+
+    #share-btn:not(:disabled):hover {
+      background: #4752c4;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <button class="close-btn" id="close-btn" title="Schließen">
+      <svg viewBox="0 0 12 12"><polygon points="12,1.1 10.9,0 6,4.9 1.1,0 0,1.1 4.9,6 0,10.9 1.1,12 6,7.1 10.9,12 12,10.9 7.1,6"></polygon></svg>
+    </button>
+    <h1>Bildschirm oder Fenster freigeben</h1>
+    <p>Wähle aus, was du in diesem Call teilen möchtest.</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-screen" data-type="screen">Bildschirm</button>
+    <button class="tab-btn" id="tab-window" data-type="window">Anwendungsfenster</button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <footer>
+    <button id="cancel-btn">Abbrechen</button>
+    <button id="share-btn" disabled>Freigeben</button>
+  </footer>
+
+  <script>
+    let selectedId = null;
+    let allSources = [];
+    let activeType = 'screen';
+
+    const grid = document.getElementById('grid');
+    const shareBtn = document.getElementById('share-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+    const tabScreen = document.getElementById('tab-screen');
+    const tabWindow = document.getElementById('tab-window');
+    const closeBtn = document.getElementById('close-btn');
+
+    function renderGrid() {
+      grid.innerHTML = '';
+      selectedId = null;
+      shareBtn.disabled = true;
+
+      const filtered = allSources.filter((s) => s.type === activeType);
+
+      if (!filtered.length) {
+        const hint = document.createElement('div');
+        hint.className = 'empty-hint';
+        hint.textContent =
+          activeType === 'screen'
+            ? 'Kein Bildschirm gefunden.'
+            : 'Keine geöffneten Anwendungsfenster gefunden.';
+        grid.appendChild(hint);
+        return;
+      }
+
+      filtered.forEach((source) => {
+        const el = document.createElement('div');
+        el.className = 'source';
+        el.dataset.id = source.id;
+
+        const img = document.createElement('img');
+        img.src = source.thumbnail;
+
+        const name = document.createElement('div');
+        name.className = 'source-name';
+        name.textContent = source.name || (source.type === 'screen' ? 'Bildschirm' : 'Fenster');
+
+        el.appendChild(img);
+        el.appendChild(name);
+
+        el.addEventListener('click', () => {
+          document.querySelectorAll('.source.selected').forEach((s) => s.classList.remove('selected'));
+          el.classList.add('selected');
+          selectedId = source.id;
+          shareBtn.disabled = false;
+        });
+
+        el.addEventListener('dblclick', () => {
+          if (selectedId) window.pickerAPI.select(selectedId);
+        });
+
+        grid.appendChild(el);
+      });
+    }
+
+    function setActiveTab(type) {
+      activeType = type;
+      tabScreen.classList.toggle('active', type === 'screen');
+      tabWindow.classList.toggle('active', type === 'window');
+      renderGrid();
+    }
+
+    tabScreen.addEventListener('click', () => setActiveTab('screen'));
+    tabWindow.addEventListener('click', () => setActiveTab('window'));
+
+    window.pickerAPI.onSources((sources) => {
+      allSources = sources;
+      renderGrid();
+    });
+
+    shareBtn.addEventListener('click', () => {
+      if (selectedId) window.pickerAPI.select(selectedId);
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      window.pickerAPI.cancel();
+    });
+
+    closeBtn.addEventListener('click', () => {
+      window.pickerAPI.cancel();
+    });
+  </script>
+</body>
+</html>

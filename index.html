@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Discord App</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #111214;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .drag-region {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: calc(100% - 150px);
+      height: 22px;
+      -webkit-app-region: drag;
+      z-index: 9998;
+    }
+
+    .window-controls {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 28px;
+      display: flex;
+      z-index: 9999;
+      -webkit-app-region: no-drag;
+    }
+
+    .control-btn {
+      width: 48px;
+      height: 100%;
+      background: transparent;
+      border: none;
+      color: #949ba4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .control-btn:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #f2f3f5;
+    }
+
+    .control-btn.close-btn:hover {
+      background-color: #da373c;
+      color: #ffffff;
+    }
+
+    .control-btn svg {
+      width: 10px;
+      height: 10px;
+      fill: currentColor;
+    }
+
+    webview {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="drag-region"></div>
+
+  <div class="window-controls">
+    <button class="control-btn" id="minimize-btn" title="Minimieren">
+      <svg viewBox="0 0 12 12"><rect y="5" width="12" height="1.5"></rect></svg>
+    </button>
+    <button class="control-btn" id="maximize-btn" title="Maximieren">
+      <svg viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.2"></rect></svg>
+    </button>
+    <button class="control-btn close-btn" id="close-btn" title="Schließen">
+      <svg viewBox="0 0 12 12"><polygon points="12,1.1 10.9,0 6,4.9 1.1,0 0,1.1 4.9,6 0,10.9 1.1,12 6,7.1 10.9,12 12,10.9 7.1,6"></polygon></svg>
+    </button>
+  </div>
+
+  <webview id="discord-webview" src="https://discord.com/app" useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"></webview>
+
+  <script>
+    document.getElementById('minimize-btn').addEventListener('click', () => window.electronAPI.minimize());
+    document.getElementById('maximize-btn').addEventListener('click', () => window.electronAPI.maximize());
+    document.getElementById('close-btn').addEventListener('click', () => window.electronAPI.close());
+
+    // Discord-Elemente ausblenden, sobald die Seite geladen ist
+    const webview = document.getElementById('discord-webview');
+    webview.addEventListener('dom-ready', () => {
+      webview.insertCSS(`
+        [aria-label="Posteingang"],
+        [aria-label="Inbox"],
+        a[href*="support.discord.com"],
+        [aria-label="Hilfe"],
+        [aria-label="Help"] {
+          display: none !important;
+        }
+      `);
+    });
+  </script>
+</body>
+</html>
